@@ -62,7 +62,7 @@ touch {A..Z}.txt
 And say we wanted to use an array job to evaluate each of these files in parallel. 
 
 
-One way to approach this would be to first get the list of files and put them in a variable `FILES`:
+One way to approach this would be to first get the list of files and put them in an array variable, `FILES`:
 
 ```bash
 export FILES=($(ls -1 *.txt))
