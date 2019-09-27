@@ -51,7 +51,7 @@ The bracketed range gives the task numbers, and `%20` indicates that 20 tasks sh
 
 The other SLURM parameters should be set to match the requirements of each task. For example, if you are aligning a fastq file using `bwa` and you want to use 4 CPUs, you would set `#SBATCH -c 1`. 
 
-The key to making these jobs useful is in how you use the SLURM_ARRAY_TASK_ID variable. As an example, let's make 26 files:
+The key to making these jobs useful is in how you use the SLURM_ARRAY_TASK_ID variable. As an example, let's make 26 empty files, each named A.txt, B.txt ...:
 
 ```bash
 touch {A..Z}.txt
