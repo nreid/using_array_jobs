@@ -1,2 +1,4 @@
-# using_array_jobs
-A guide to splitting up big jobs using slurm job arrays on the xanadu cluster
+# Job Arrays on Xanadu
+
+A guide to splitting up big jobs using slurm job arrays on UConn's Xanadu cluster. 
+
