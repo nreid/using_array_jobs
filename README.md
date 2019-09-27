@@ -57,13 +57,9 @@ The key to making these jobs useful is in how you use the SLURM_ARRAY_TASK_ID va
 touch {A..Z}.txt
 ```
 
-And say we wanted to use an array job to evaluate each of these files in parallel. One way to approach this would be to first get the list of files and put them in an array variable, `FILES`:
+And say we wanted to use an array job to evaluate each of these files in parallel. One way to approach this is to create an array variable containing the list of files to analyze, and then use the SLURM_ARRAY_TASK_ID to retrieve elements of the list. 
 
-```bash
-export FILES=($(ls -1 *.txt))
-```
-
-And then submit an array job script that looked like this:
+An array job script that does this might look like this:
 
 ```bash
 #!/bin/bash
@@ -84,6 +80,9 @@ And then submit an array job script that looked like this:
 echo "host name : " `hostname`
 echo This is array job number $SLURM_ARRAY_TASK_ID
 
+# create an array variable containing the file names
+FILES=($(ls -1 *.txt))
+
 # get specific file name
 	# note that FILES variable is 0-indexed so
 	# for convenience we also began the task IDs with 0
@@ -93,3 +92,11 @@ echo $FILENAME
 echo File $FILENAME was processed by task number $SLURM_ARRAY_TASK_ID on $(date) >>$FILENAME
 
 ```
+
+Here we retrieve each `FILENAME` by using `SLURM_ARRAY_TASK_ID` to grab one element of `FILE`. 
+
+Then we are simply writing that we processed FILENAME to the file. 
+
+In this case our files all end in `.txt` etc, but we might want to write to `.out.txt`. We could do this by replacing `>>$FILENAME` with something like `>>$(echo $FILENAME | sed 's/.txt/out.txt/')`, but in that case, we should either write the output to a new directory or use output file naming that doesn't match pattern used to list the input files. This is because each array task generates the array variable `FILES` anew. If the results are written to the same directory and match the search pattern, then later tasks will try to run on the results files. 
+
+
