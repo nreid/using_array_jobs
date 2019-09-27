@@ -51,11 +51,18 @@ For each task, the variable SLURM_ARRAY_TASK_ID is set to the task number. These
 
 The bracketed range gives the task numbers, and `%20` indicates that 20 tasks should run simultaneously. The other SLURM parameters should be set to match the requirements of each task. For example, if you are aligning a fastq file using `bwa` and you want to use 4 CPUs, you would set `#SBATCH -c 4`. 
 
-The key to making these job arrays useful is in how you use the SLURM_ARRAY_TASK_ID variable. As an example, let's make 50 empty files, each named A.R1.fastq, A.R2.fastq ..., as if we had paired end reads from 25 samples. 
+The key to making these job arrays useful is in how you use the SLURM_ARRAY_TASK_ID variable. 
+
+___
+
+As an example, let's pretend we have Illumina sequencing data from 25 samples. For each sample we have paired sequences in separate files, each named Sample_A.R1.fastq, Sample_A.R2.fastq, etc. We can make dummy files for this exercise:
 
 ```bash
-touch {A..Y}.R1.fastq
-touch {A..Y}.R2.fastq
+mkdir array_test
+cd array_test
+
+touch Sample_{A..Y}.R1.fastq
+touch Sample_{A..Y}.R2.fastq
 ```
 
 Say we wanted to use an array job to align each of these samples in parallel. One way to approach this is to create an array variable containing the list of files to analyze, and then use the SLURM_ARRAY_TASK_ID to retrieve elements of the list. 
@@ -95,13 +102,13 @@ echo $FQ1 $FQ2
 # we won't actually try to align these fake files here but it might look like:
 
 # module load bwa
-# bwa mem refgenome $FQ1 $FQ2 > $OUT
+# bwa mem refgenome.fa $FQ1 $FQ2 > $OUT
 
 echo Files $FQ1 and $FQ2 were aligned by task number $SLURM_ARRAY_TASK_ID on $(date)
 
 ```
 
-We create the array variable by `FILES=($(ls -1 *.R1.fastq))`, retrieving all files ending in `*.R1.fastq`. 
+We created the array variable by `FILES=($(ls -1 *.R1.fastq))`, retrieving all files ending in `*.R1.fastq`. 
 
 We then retrieve each individual `FQ1` by using `SLURM_ARRAY_TASK_ID` to grab one element of `FILES`. We then get the paired ends by modifying `FQ1` using `sed`: `FQ2=$(echo $FQ1 | sed 's/R1/R2/')` and defining the output file, `OUT` similarly. 
 
