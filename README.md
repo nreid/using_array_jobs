@@ -49,20 +49,15 @@ For each task in the array, the variable SLURM_ARRAY_TASK_ID is set to the task 
 
 The bracketed range gives the task numbers, and `%20` indicates that 20 tasks should run simultaneously. 
 
-The other SLURM parameters should be set to match the requriements of each task. For example, if you are aligning a fastq file using `bwa` and you want to use 4 CPUs, you would set `-c 4`. 
+The other SLURM parameters should be set to match the requirements of each task. For example, if you are aligning a fastq file using `bwa` and you want to use 4 CPUs, you would set `#SBATCH -c 1`. 
 
-The key to making these jobs useful is in how you use the SLURM_ARRAY_TASK_ID variable. 
-
-As an example, let's make 26 files:
+The key to making these jobs useful is in how you use the SLURM_ARRAY_TASK_ID variable. As an example, let's make 26 files:
 
 ```bash
 touch {A..Z}.txt
 ```
 
-And say we wanted to use an array job to evaluate each of these files in parallel. 
-
-
-One way to approach this would be to first get the list of files and put them in an array variable, `FILES`:
+And say we wanted to use an array job to evaluate each of these files in parallel. One way to approach this would be to first get the list of files and put them in an array variable, `FILES`:
 
 ```bash
 export FILES=($(ls -1 *.txt))
