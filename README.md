@@ -16,7 +16,7 @@ Some examples of situations where array jobs can be helpful:
 - Evaluating many positions in the genome (e.g. variant calling). 
 - Simulating and evaluating many datasets. 
 
-An example of a trivial array job script is below:
+An example of a trivial array job script, which would be submitted using `sbatch` is below:
 
 
 ```bash
@@ -43,7 +43,7 @@ echo This is array job number $SLURM_ARRAY_TASK_ID
 
 This job simply prints the hostname and the task number for each task in the array. 
 
-For each task, the variable SLURM_ARRAY_TASK_ID is set to the task number. These numbers can range from 0 to one less than the max number of jobs (on Xanadu this is ####), but can be any set of numbers or ranges, separated by commas. The numbers are specified on this line:
+For each task, the variable SLURM_ARRAY_TASK_ID is set to the task number. These numbers can range from 0 to 1000 (currently the maximum array size on Xanadu), but can be any set of numbers or ranges, separated by commas. The numbers are specified on this line:
 
 ```bash
 #SBATCH --array=[1-1000]%20
@@ -78,7 +78,7 @@ An array job script that does this might look like this:
 #SBATCH --mem=1G
 #SBATCH --partition=general
 #SBATCH --qos=general
-#SBATCH --array=[0-25]%20
+#SBATCH --array=[0-24]%20
 ##SBATCH --mail-type=ALL
 ##SBATCH --mail-user=YOUR.EMAIL@uconn.edu
 #SBATCH -o %x_%A_%a.out
@@ -118,7 +118,7 @@ Another approach to make this slightly more robust would be to generate the FILE
 
 This would use the full path for each file and allow the script to be run from any directory. 
 
-If you had a small number of files, you could also avoid using the search pattern altogether and define the array variable inside the script by `FILES=(A.R1.fastq, B.R1.fastq. C.R1.fastq)`
+If you had a small number of files, you could also avoid using the search pattern altogether and define the array variable inside the script by `FILES=(Sample_A.R1.fastq, Sample_B.R1.fastq. Sample_C.R1.fastq)`
 
 The approach outlined here would work for any situation where you need to iterate an analysis over many files. 
 
@@ -129,27 +129,29 @@ This approach of defining the list of items to be operated on inside the array j
 
 In those cases you may want to use a file that contains all the relevant information, and extract what you need for each run. 
 
-As an example, let's say we want to break a variant calling run up over 100kb windows of the human genome. 
+As an example, let's say we want to break a variant calling run up over 1mb windows of the human genome. 
 
-We can first define these 100kb windows using `bedtools`. 
+We can first define these 1mb windows using `bedtools`. 
 
 ```bash
 module load bedtools
 
 # a tab delimited file giving chromosome names and lengths for the human genome
+	# you can make your own version of this file with a reference genome and "samtools faidx"
 GEN=/isg/shared/databases/alignerIndex/animal/hg38_ucsc/hg38_STAR/chrNameLength.txt
 
-bedtools makewindows -g $GEN -w 100000 >100kb.win.bed
+bedtools makewindows -g $GEN -w 10000000 >10mb.win.bed
 ```
 
-This bed file has 32489 lines and looks like this:
+This bed file has 791 lines and looks like this:
 
 ```bash
-chr1	0	100000
-chr1	100000	200000
-chr1	200000	300000
-chr1	300000	400000
-chr1	400000	500000
+chr1	0	10000000
+chr1	10000000	20000000
+chr1	20000000	30000000
+chr1	30000000	40000000
+chr1	40000000	50000000
+chr1	50000000	60000000
 ```
 
 We want to run the variant caller over each region as a separate task. We could specify the job array this way:
@@ -163,7 +165,7 @@ We want to run the variant caller over each region as a separate task. We could 
 #SBATCH --mem=1G
 #SBATCH --partition=general
 #SBATCH --qos=general
-#SBATCH --array=[1-32489]%20
+#SBATCH --array=[1-791]%20
 ##SBATCH --mail-type=ALL
 ##SBATCH --mail-user=YOUR.EMAIL@uconn.edu
 #SBATCH -o %x_%A_%a.out
@@ -174,9 +176,9 @@ echo "host name : " `hostname`
 echo This is array job number $SLURM_ARRAY_TASK_ID
 
 # put relevant data in variables
-CHR=$(sed -n ${SLURM_ARRAY_TASK_ID}p 100kb.win.bed | cut -f 1)
-START=$(expr $(sed -n ${SLURM_ARRAY_TASK_ID}p 100kb.win.bed | cut -f 2) + 1)
-STOP=$(sed -n ${SLURM_ARRAY_TASK_ID}p 100kb.win.bed | cut -f 3)
+CHR=$(sed -n ${SLURM_ARRAY_TASK_ID}p 10mb.win.bed | cut -f 1)
+START=$(expr $(sed -n ${SLURM_ARRAY_TASK_ID}p 10mb.win.bed | cut -f 2) + 1)
+STOP=$(sed -n ${SLURM_ARRAY_TASK_ID}p 10mb.win.bed | cut -f 3)
 
 # define region variable
 REGION=${CHR}:${START}-${STOP}
@@ -190,9 +192,9 @@ echo This script will analyze region $REGION of the human genome.
 
 ```
 
-We specify the size of the job array as `#SBATCH --array=[1-32489]%20`. Note that it begins at 1 in this case. We use `sed` to print only the line of the file corresponding to the array task number and pipe that to `cut` to pull out the column that corresponds to the bit of data we want, placing that in a shell variable. Note that for `START`, we add 1 to the number in the bed file because a quirk of the BED format is that the start column is 0-indexed while the end column is 1-indexed. The region specification format of sequence:start-stop usually expects the start and stop positions to both be 1-indexed. 
+We specify the size of the job array as `#SBATCH --array=[1-791]%20`. Note that it begins at 1 in this case. We use `sed` to print only the line of the file corresponding to the array task number and pipe that to `cut` to pull out the column that corresponds to the bit of data we want, placing that in a shell variable. Note that for `START`, we add 1 to the number in the bed file because a quirk of the BED format is that the start column is 0-indexed while the end column is 1-indexed. The region specification format of sequence:start-stop usually expects the start and stop positions to both be 1-indexed. 
 
-This would result in 32489 jobs being run 20 at a time and produce as many output vcf files. The final step would probably be to use a package like `bcftools` or `vcflib` to filter and combine these into a single vcf. 
+This would result in 791 jobs being run 20 at a time and produce as many output vcf files. The final step would probably be to use a package like `bcftools` or `vcflib` to filter and combine these into a single vcf. 
 
 This approach could be generalized to any situation where you have a repetitive task you wish to parallelize, but input parameters that vary for each task. 
 
