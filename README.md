@@ -142,7 +142,7 @@ GEN=/isg/shared/databases/alignerIndex/animal/hg38_ucsc/hg38_STAR/chrNameLength.
 bedtools makewindows -g $GEN -w 10000000 >10mb.win.bed
 ```
 
-This bed file has 791 lines and looks like this:
+The resulting bed file, `10mb.win.bed` has 791 lines and looks like this:
 
 ```bash
 chr1	0	10000000
@@ -180,6 +180,7 @@ START=$(expr $(sed -n ${SLURM_ARRAY_TASK_ID}p 10mb.win.bed | cut -f 2) + 1)
 STOP=$(sed -n ${SLURM_ARRAY_TASK_ID}p 10mb.win.bed | cut -f 3)
 
 # define region variable
+	# for most tools in the format chr:start-stop
 REGION=${CHR}:${START}-${STOP}
 
 echo This script will analyze region $REGION of the human genome. 
