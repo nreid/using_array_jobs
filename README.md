@@ -2,6 +2,8 @@
 
 A guide to splitting up big jobs using slurm job arrays on UConn's Xanadu cluster. 
 
+See the scripts directory of the repository for examples. 
+
 ## What is a job array?
 
 According to the [SLURM](https://slurm.schedmd.com/job_array.html) documentation:
