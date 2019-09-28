@@ -53,7 +53,7 @@ The bracketed range gives the task numbers, and `%20` indicates that 20 tasks sh
 
 The key to making these job arrays useful is in how you use the SLURM_ARRAY_TASK_ID variable. 
 
-___
+## Iterating over a list of files
 
 As an example, let's pretend we have Illumina sequencing data from 25 samples. For each sample we have paired sequences in separate files, each named Sample_A.R1.fastq, Sample_A.R2.fastq, etc. We can make dummy files for this exercise:
 
@@ -122,8 +122,7 @@ If you had a small number of files, you could also avoid using the search patter
 
 The approach outlined here would work for any situation where you need to iterate an analysis over many files. 
 
-___
-
+## Iterating over varying input parameters
 
 This approach of defining the list of items to be operated on inside the array job script works fine for lists of files (as long as you define matching patterns, file names, and directories that won't collide). But for targeting many genomic regions or conducting repetitive simulations, you may need to define several variables that are not straightforward manipulations of the task ID and file names. 
 
