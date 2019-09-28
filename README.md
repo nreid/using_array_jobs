@@ -96,7 +96,7 @@ FILES=($(ls -1 *.R1.fastq))
 	# for convenience we also began the task IDs with 0
 FQ1=${FILES[$SLURM_ARRAY_TASK_ID]}
 FQ2=$(echo $FQ1 | sed 's/R1/R2/')
-OUT=$(echo $FQ1 | sed 's/.R1.fastq/.bam/')
+OUT=$(echo $FQ1 | sed 's/.R1.fastq/.sam/')
 echo $FQ1 $FQ2
 
 # we won't actually try to align these fake files here but it might look like:
@@ -124,13 +124,13 @@ The approach outlined here would work for any situation where you need to iterat
 
 ## Iterating over varying input parameters
 
-This approach of defining the list of items to be operated on inside the array job script works fine for lists of files (as long as you define matching patterns, file names, and directories that won't collide). But for targeting many genomic regions or conducting repetitive simulations, you may need to define several variables that are not straightforward manipulations of the task ID and file names. 
+This approach of defining the list of items to be operated on inside the array job script works fine for lists of files (as long as you define matching patterns, file names, and directories that won't collide). But when the variables you want to iterate over are not straightforward manipulations of the task ID or file names, such as targeting many genomic regions, you need another approach. 
 
-In those cases you may want to use a file that contains all the relevant information, and extract what you need for each run. 
+In those cases you may want to use a file that contains all the relevant information, and extract what you need for each task. 
 
-As an example, let's say we want to break a variant calling run up over 1mb windows of the human genome. 
+As an example, let's say we want to call variants on human whole genome sequencing data. Instead of letting one job churn through the whole thing sequentially, we might break the job into 10 megabase chunks and run 20 jobs simultaneously to speed it up. 
 
-We can first define these 1mb windows using `bedtools`. 
+We can first define these 10mb windows using `bedtools`. 
 
 ```bash
 module load bedtools
