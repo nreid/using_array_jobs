@@ -18,7 +18,7 @@ Some examples of situations where array jobs can be helpful:
 - Evaluating many positions in the genome (e.g. variant calling). 
 - Simulating and evaluating many datasets. 
 
-An example of a trivial array job script, which would be submitted using `sbatch` is below:
+An example of a trivial array job script, which would be submitted using `sbatch` is below. To run this as a test, create a directory `mkdir array_test`, save the script there using a text editor such as `nano` and submit it to the job scheduler using the command `sbatch`. 
 
 
 ```bash
@@ -38,12 +38,12 @@ An example of a trivial array job script, which would be submitted using `sbatch
 
 
 echo "host name : " `hostname`
-echo This is array job number $SLURM_ARRAY_TASK_ID
+echo This is array task number $SLURM_ARRAY_TASK_ID
 
 
 ```
 
-This job simply prints the hostname and the task number for each task in the array. 
+The job will produce 2 files for each task. Each `.out` file contains the hostname and the task number for each task, and the `.err` file contains any corresponding text printed to the standard error stream. 
 
 For each task, the variable SLURM_ARRAY_TASK_ID is set to the task number. These numbers can range from 0 to 1000 (currently the maximum array size on Xanadu), but can be any set of numbers or ranges, separated by commas. The numbers are specified on this line:
 
@@ -60,8 +60,9 @@ The key to making these job arrays useful is in how you use the SLURM_ARRAY_TASK
 As an example, let's pretend we have Illumina sequencing data from 25 samples. For each sample we have paired sequences in separate files, each named Sample_A.R1.fastq, Sample_A.R2.fastq, etc. We can make dummy files for this exercise:
 
 ```bash
-mkdir array_test
-cd array_test
+# make a new directory to hold test files and cd into it
+mkdir array_test_2
+cd array_test_2
 
 touch Sample_{A..Y}.R1.fastq
 touch Sample_{A..Y}.R2.fastq
@@ -88,17 +89,20 @@ An array job script that does this might look like this:
 
 
 echo "host name : " `hostname`
-echo This is array job number $SLURM_ARRAY_TASK_ID
+echo This is array task number $SLURM_ARRAY_TASK_ID
 
 # create an array variable containing the file names
 FILES=($(ls -1 *.R1.fastq))
 
-# get specific file name
+# get specific file name, assign it to FQ1
 	# note that FILES variable is 0-indexed so
 	# for convenience we also began the task IDs with 0
 FQ1=${FILES[$SLURM_ARRAY_TASK_ID]}
+# edit the file name to refer to the mate pair file and assign that name to FQ2
 FQ2=$(echo $FQ1 | sed 's/R1/R2/')
+# create an output file name
 OUT=$(echo $FQ1 | sed 's/.R1.fastq/.sam/')
+# write the input filenames to the standard output to check that everything ran according to expectations. 
 echo $FQ1 $FQ2
 
 # we won't actually try to align these fake files here but it might look like:
@@ -120,7 +124,7 @@ Another approach to make this slightly more robust would be to generate the FILE
 
 This would use the full path for each file and allow the script to be run from any directory. 
 
-If you had a small number of files, you could also avoid using the search pattern altogether and define the array variable inside the script by `FILES=(Sample_A.R1.fastq, Sample_B.R1.fastq. Sample_C.R1.fastq)`
+If you had a small number of files, you could also avoid using the search pattern altogether and define the array variable inside the script by writing out the file names: `FILES=(Sample_A.R1.fastq, Sample_B.R1.fastq. Sample_C.R1.fastq)`
 
 The approach outlined here would work for any situation where you need to iterate an analysis over many files. 
 
@@ -135,9 +139,14 @@ As an example, let's say we want to call variants on human whole genome sequenci
 We can first define these 10mb windows using `bedtools`. 
 
 ```bash
+# make a new directory to hold test files and cd into it. 
+mkdir array_test_3
+cd array_test_3
+
+# load bedtools
 module load bedtools
 
-# a tab delimited file giving chromosome names and lengths for the human genome
+# this is a tab delimited file giving chromosome names and lengths for the human genome
 	# you can make your own version of this file with a reference genome and "samtools faidx"
 GEN=/isg/shared/databases/alignerIndex/animal/hg38_ucsc/hg38_STAR/chrNameLength.txt
 
@@ -174,7 +183,7 @@ We want to run the variant caller over each region as a separate task. We could 
 
 
 echo "host name : " `hostname`
-echo This is array job number $SLURM_ARRAY_TASK_ID
+echo This is array task number $SLURM_ARRAY_TASK_ID
 
 # put relevant data in variables
 CHR=$(sed -n ${SLURM_ARRAY_TASK_ID}p 10mb.win.bed | cut -f 1)
@@ -185,7 +194,7 @@ STOP=$(sed -n ${SLURM_ARRAY_TASK_ID}p 10mb.win.bed | cut -f 3)
 	# for most tools in the format chr:start-stop
 REGION=${CHR}:${START}-${STOP}
 
-echo This script will analyze region $REGION of the human genome. 
+echo This task will analyze region $REGION of the human genome. 
 
 # subsequent lines would define input and output file names and the variant caller, e.g:
 
